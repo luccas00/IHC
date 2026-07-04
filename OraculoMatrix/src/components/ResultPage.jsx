@@ -23,7 +23,7 @@ function ResultPage({ selectedPill, onRestart, onAbout }) {
           Refazer Caminho
         </button>
         <button type="button" className="primary-button" onClick={onAbout}>
-          Ver Conceitos De IHC
+          Conceitos de IHC
         </button>
       </div>
     </section>
