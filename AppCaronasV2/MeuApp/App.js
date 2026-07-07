@@ -1,5 +1,5 @@
 // Prática 5 - React Native
-// Aluno: Luccas Vinicius
+// Aluno: Luccas Vinicius - 20.1.8015
 // App: Caronas ICEA
 
 import React, { useState } from 'react';
