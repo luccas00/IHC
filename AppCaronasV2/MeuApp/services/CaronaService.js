@@ -17,16 +17,13 @@ export async function buscarCaronas() {
   const caronasRef = collection(db, CARONAS_COLLECTION);
 
   try {
-    const snapshot = await getDocs(
-      query(caronasRef, orderBy('horario', 'asc'))
-    );
+    const snapshot = await getDocs(query(caronasRef, orderBy('horario', 'asc')));
 
     return snapshot.docs.map((documento) => ({
       id: documento.id,
       ...documento.data(),
     }));
   } catch (error) {
-    // Caso o índice/ordenação ainda não esteja disponível, busca sem ordenar.
     const snapshot = await getDocs(caronasRef);
 
     return snapshot.docs
@@ -53,10 +50,7 @@ export async function criarCarona(carona) {
     criadoEm: serverTimestamp(),
   };
 
-  const referencia = await addDoc(
-    collection(db, CARONAS_COLLECTION),
-    documento
-  );
+  const referencia = await addDoc(collection(db, CARONAS_COLLECTION), documento);
 
   return referencia.id;
 }

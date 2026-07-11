@@ -1,5 +1,4 @@
 import { collection, getDocs, query, where } from 'firebase/firestore';
-
 import { db } from '../FirebaseConfig';
 
 const USERS_COLLECTION = 'Users';
