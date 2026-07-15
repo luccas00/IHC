@@ -28,13 +28,18 @@ import HomeScreen from './screens/HomeScreen';
 import BuscarCaronasScreen from './screens/BuscarCaronasScreen';
 import PublicarCaronaScreen from './screens/PublicarCaronaScreen';
 import ResultadosScreen from './screens/ResultadosScreen';
+import MinhasCaronasScreen from './screens/MinhasCaronasScreen';
 import SobreScreen from './screens/SobreScreen';
 
 import {
   buscarCaronas,
   criarCarona,
-  solicitarVaga,
 } from './services/CaronaService';
+import {
+  buscarReservasDoUsuario,
+  cancelarReserva,
+  solicitarReserva,
+} from './services/ReservaService';
 
 import { colors } from './styles/colors';
 import { commonStyles } from './styles/commonStyles';
@@ -84,6 +89,9 @@ function AppContent() {
   const [carregandoCaronas, setCarregandoCaronas] = useState(false);
   const [publicandoCarona, setPublicandoCarona] = useState(false);
 
+  const [reservasUsuario, setReservasUsuario] = useState([]);
+  const [carregandoReservas, setCarregandoReservas] = useState(false);
+
   useEffect(() => {
     carregarCaronas();
   }, []);
@@ -124,7 +132,7 @@ function AppContent() {
           (
             horarioCaronaEmMinutos !== null &&
             horarioCaronaEmMinutos >=
-            inicioEmMinutos
+              inicioEmMinutos
           );
 
         const correspondeHorarioFim =
@@ -132,7 +140,7 @@ function AppContent() {
           (
             horarioCaronaEmMinutos !== null &&
             horarioCaronaEmMinutos <=
-            fimEmMinutos
+              fimEmMinutos
           );
 
         return (
@@ -168,15 +176,47 @@ function AppContent() {
     }
   }
 
+  async function carregarReservas(emailUsuario = usuarioAtual?.email) {
+    if (!emailUsuario) {
+      setReservasUsuario([]);
+      return;
+    }
+
+    try {
+      setCarregandoReservas(true);
+      const lista = await buscarReservasDoUsuario(emailUsuario);
+      setReservasUsuario(lista);
+    } catch (error) {
+      console.error('Erro ao carregar reservas:', error);
+
+      Alert.alert(
+        'Erro ao carregar',
+        'Não foi possível carregar suas reservas do Firestore.'
+      );
+    } finally {
+      setCarregandoReservas(false);
+    }
+  }
+
   function handleLogin(usuario) {
     setUsuarioAtual(usuario);
     setPerfil(usuario.perfil || 'Passageiro');
     setScreen('home');
+    carregarReservas(usuario.email);
   }
 
   function handleLogout() {
     setUsuarioAtual(null);
+    setReservasUsuario([]);
     setScreen('login');
+  }
+
+  function handleNavigate(screenDestino) {
+    if (screenDestino === 'minhasCaronas') {
+      carregarReservas();
+    }
+
+    setScreen(screenDestino);
   }
 
   function handleBuscarCarona() {
@@ -288,20 +328,102 @@ function AppContent() {
     }
   }
 
-  async function handleSolicitarVaga(carona) {
+  function handleSolicitarVaga(carona) {
+    const vagasTotais = Number(carona.vagas || 0);
+    const vagasPreenchidas = Number(carona.vagasPreenchidas || 0);
+    const vagasDisponiveis = Math.max(0, vagasTotais - vagasPreenchidas);
+
+    if (vagasDisponiveis <= 0) {
+      Alert.alert(
+        'Sem vagas',
+        'Não há vagas disponíveis nessa carona.'
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Confirmar reserva',
+      `${carona.origem} → ${carona.destino}\nHorário: ${carona.horario}\n\nDeseja solicitar uma vaga?`,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Confirmar',
+          onPress: () => executarSolicitacaoVaga(carona),
+        },
+      ]
+    );
+  }
+
+  async function executarSolicitacaoVaga(carona) {
     try {
-      await solicitarVaga(carona.id);
-      await carregarCaronas();
+      await solicitarReserva(carona, usuarioAtual);
+      await Promise.all([
+        carregarCaronas(),
+        carregarReservas(usuarioAtual?.email),
+      ]);
 
       Alert.alert(
-        'Reserva solicitada',
-        `Uma vaga foi reservada na rota ${carona.origem} → ${carona.destino}.`
+        'Reserva confirmada',
+        'Sua vaga foi reservada com sucesso.',
+        [
+          {
+            text: 'Continuar',
+            style: 'cancel',
+          },
+          {
+            text: 'Ver minhas caronas',
+            onPress: () => setScreen('minhasCaronas'),
+          },
+        ]
       );
     } catch (error) {
       console.error('Erro ao solicitar vaga:', error);
 
       Alert.alert(
         'Não foi possível reservar',
+        error.message || 'Tente novamente.'
+      );
+    }
+  }
+
+  function handleCancelarReserva(reserva) {
+    Alert.alert(
+      'Cancelar reserva',
+      `${reserva.origem} → ${reserva.destino}\nHorário: ${reserva.horario}\n\nDeseja realmente cancelar esta reserva?`,
+      [
+        {
+          text: 'Manter reserva',
+          style: 'cancel',
+        },
+        {
+          text: 'Cancelar reserva',
+          style: 'destructive',
+          onPress: () => executarCancelamentoReserva(reserva),
+        },
+      ]
+    );
+  }
+
+  async function executarCancelamentoReserva(reserva) {
+    try {
+      await cancelarReserva(reserva);
+      await Promise.all([
+        carregarCaronas(),
+        carregarReservas(usuarioAtual?.email),
+      ]);
+
+      Alert.alert(
+        'Reserva cancelada',
+        'A vaga foi liberada novamente.'
+      );
+    } catch (error) {
+      console.error('Erro ao cancelar reserva:', error);
+
+      Alert.alert(
+        'Não foi possível cancelar',
         error.message || 'Tente novamente.'
       );
     }
@@ -415,6 +537,16 @@ function AppContent() {
           />
         );
 
+      case 'minhasCaronas':
+        return (
+          <MinhasCaronasScreen
+            reservas={reservasUsuario}
+            carregandoReservas={carregandoReservas}
+            onAtualizar={() => carregarReservas()}
+            onCancelar={handleCancelarReserva}
+          />
+        );
+
       case 'sobre':
         return <SobreScreen />;
 
@@ -455,7 +587,7 @@ function AppContent() {
       />
 
       <AppHeader onLogout={handleLogout} />
-      <AppMenu screen={screen} onNavigate={setScreen} />
+      <AppMenu screen={screen} onNavigate={handleNavigate} />
 
       <ScrollView
         style={commonStyles.page}

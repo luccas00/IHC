@@ -7,6 +7,7 @@ export default function AppMenu({ screen, onNavigate }) {
     { key: 'home', label: 'Início' },
     { key: 'buscar', label: 'Buscar' },
     { key: 'publicar', label: 'Publicar' },
+    { key: 'minhasCaronas', label: 'Caronas' },
     { key: 'sobre', label: 'Sobre' },
   ];
 
@@ -37,7 +38,7 @@ const styles = StyleSheet.create({
   menu: {
     flexDirection: 'row',
     backgroundColor: colors.secondaryDark,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
   },
   menuButton: {
     flex: 1,
@@ -53,7 +54,7 @@ const styles = StyleSheet.create({
   menuText: {
     color: '#cbd9e5',
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 11,
   },
   menuTextActive: {
     color: colors.surface,

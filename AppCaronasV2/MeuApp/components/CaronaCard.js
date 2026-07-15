@@ -4,7 +4,9 @@ import { colors } from '../styles/colors';
 import { formatarAvaliacao, formatarMoeda } from '../utils/formatters';
 
 export default function CaronaCard({ carona, permitirReserva, onReservar }) {
-  const vagasDisponiveis = Number(carona.vagas || 0);
+  const vagasTotais = Number(carona.vagas || 0);
+  const vagasPreenchidas = Number(carona.vagasPreenchidas || 0);
+  const vagasDisponiveis = Math.max(0, vagasTotais - vagasPreenchidas);
 
   return (
     <View style={styles.rideItem}>
@@ -15,7 +17,9 @@ export default function CaronaCard({ carona, permitirReserva, onReservar }) {
       <Text style={styles.rideText}>Motorista: {carona.motorista}</Text>
       <Text style={styles.rideText}>Horário: {carona.horario}</Text>
       <Text style={styles.rideText}>Valor: {formatarMoeda(carona.valor)}</Text>
-      <Text style={styles.rideText}>Vagas: {vagasDisponiveis}</Text>
+      <Text style={styles.rideText}>
+        Vagas disponíveis: {vagasDisponiveis} de {vagasTotais}
+      </Text>
       <Text style={styles.rideText}>
         Avaliação: {formatarAvaliacao(carona.avaliacao)}
       </Text>

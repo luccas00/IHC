@@ -10,6 +10,13 @@ export default function HomeScreen({
   onPerfilChange,
   caronasDisponiveis,
 }) {
+  const totalVagasDisponiveis = caronasDisponiveis.reduce((total, carona) => {
+    const vagasTotais = Number(carona.vagas || 0);
+    const vagasPreenchidas = Number(carona.vagasPreenchidas || 0);
+
+    return total + Math.max(0, vagasTotais - vagasPreenchidas);
+  }, 0);
+
   return (
     <>
       <View style={commonStyles.card}>
@@ -60,12 +67,9 @@ export default function HomeScreen({
 
           <View style={styles.indicator}>
             <Text style={styles.indicatorNumber}>
-              {caronasDisponiveis.reduce(
-                (total, carona) => total + Number(carona.vagas || 0),
-                0
-              )}
+              {totalVagasDisponiveis}
             </Text>
-            <Text style={styles.indicatorLabel}>Vagas</Text>
+            <Text style={styles.indicatorLabel}>Vagas disponíveis</Text>
           </View>
         </View>
       </View>
@@ -126,5 +130,6 @@ const styles = StyleSheet.create({
   indicatorLabel: {
     color: colors.textMuted,
     marginTop: 3,
+    textAlign: 'center',
   },
 });

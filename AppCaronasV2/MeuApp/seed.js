@@ -1,4 +1,9 @@
-import { doc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  serverTimestamp,
+  writeBatch,
+} from 'firebase/firestore';
 
 import { db } from './FirebaseConfig';
 
@@ -120,7 +125,21 @@ export async function seedDatabase() {
     );
   });
 
-  caronas.forEach((carona) => {
+  const caronasComOcupacao = await Promise.all(
+    caronas.map(async (carona) => {
+      const caronaRef = doc(db, 'Caronas', carona.id);
+      const snapshot = await getDoc(caronaRef);
+
+      return {
+        ...carona,
+        vagasPreenchidas: snapshot.exists()
+          ? Number(snapshot.data().vagasPreenchidas || 0)
+          : 0,
+      };
+    })
+  );
+
+  caronasComOcupacao.forEach((carona) => {
     const { id, ...dados } = carona;
 
     batch.set(
