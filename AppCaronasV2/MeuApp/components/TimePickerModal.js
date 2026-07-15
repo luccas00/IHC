@@ -1,20 +1,73 @@
-import React from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+import {
+  gerarHorasDisponiveis,
+  gerarMinutosDisponiveis,
+  obterHorarioPadrao,
+} from '../constants/time';
 import { colors } from '../styles/colors';
 
-const HORARIOS = [
-  '07:00',
-  '07:30',
-  '08:00',
-  '12:00',
-  '13:00',
-  '17:30',
-  '18:00',
-  '18:30',
-  '22:00',
-];
+export default function TimePickerModal({
+  visible,
+  selectedTime,
+  title = 'Selecionar horário',
+  onSelect,
+  onClose,
+}) {
+  const horasDisponiveis =
+    gerarHorasDisponiveis();
+  const minutosDisponiveis =
+    gerarMinutosDisponiveis();
 
-export default function TimePickerModal({ visible, onSelect, onClose }) {
+  const horarioPadrao = obterHorarioPadrao();
+  const [horaPadrao, minutoPadrao] =
+    horarioPadrao.split(':');
+
+  const [horaSelecionada, setHoraSelecionada] =
+    useState(horaPadrao);
+  const [
+    minutoSelecionado,
+    setMinutoSelecionado,
+  ] = useState(minutoPadrao);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const horarioInicial =
+      selectedTime || horarioPadrao;
+
+    const [hora, minuto] =
+      horarioInicial.split(':');
+
+    setHoraSelecionada(
+      horasDisponiveis.includes(hora)
+        ? hora
+        : horasDisponiveis[0]
+    );
+
+    setMinutoSelecionado(
+      minutosDisponiveis.includes(minuto)
+        ? minuto
+        : minutosDisponiveis[0]
+    );
+  }, [visible, selectedTime]);
+
+  function handleConfirmar() {
+    onSelect(
+      `${horaSelecionada}:${minutoSelecionado}`
+    );
+  }
+
   return (
     <Modal
       visible={visible}
@@ -24,22 +77,114 @@ export default function TimePickerModal({ visible, onSelect, onClose }) {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalBox}>
-          <Text style={styles.title}>Selecionar horário</Text>
+          <Text style={styles.title}>
+            {title}
+          </Text>
 
-          <View style={styles.timeGrid}>
-            {HORARIOS.map((time) => (
-              <TouchableOpacity
-                key={time}
-                style={styles.timeButton}
-                onPress={() => onSelect(time)}
+          <Text style={styles.selectedTime}>
+            {horaSelecionada}:{minutoSelecionado}
+          </Text>
+
+          <View style={styles.rollupContainer}>
+            <View style={styles.rollupColumn}>
+              <Text style={styles.columnTitle}>
+                Hora
+              </Text>
+
+              <ScrollView
+                style={styles.rollup}
+                showsVerticalScrollIndicator
               >
-                <Text style={styles.timeText}>{time}</Text>
-              </TouchableOpacity>
-            ))}
+                {horasDisponiveis.map((hora) => (
+                  <TouchableOpacity
+                    key={hora}
+                    style={[
+                      styles.rollupItem,
+                      horaSelecionada === hora &&
+                        styles.rollupItemSelected,
+                    ]}
+                    onPress={() =>
+                      setHoraSelecionada(hora)
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.rollupItemText,
+                        horaSelecionada === hora &&
+                          styles.rollupItemTextSelected,
+                      ]}
+                    >
+                      {hora}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            <Text style={styles.separator}>
+              :
+            </Text>
+
+            <View style={styles.rollupColumn}>
+              <Text style={styles.columnTitle}>
+                Minuto
+              </Text>
+
+              <ScrollView
+                style={styles.rollup}
+                showsVerticalScrollIndicator
+              >
+                {minutosDisponiveis.map(
+                  (minuto) => (
+                    <TouchableOpacity
+                      key={minuto}
+                      style={[
+                        styles.rollupItem,
+                        minutoSelecionado ===
+                          minuto &&
+                          styles.rollupItemSelected,
+                      ]}
+                      onPress={() =>
+                        setMinutoSelecionado(
+                          minuto
+                        )
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.rollupItemText,
+                          minutoSelecionado ===
+                            minuto &&
+                            styles.rollupItemTextSelected,
+                        ]}
+                      >
+                        {minuto}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                )}
+              </ScrollView>
+            </View>
           </View>
 
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>Cancelar</Text>
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={handleConfirmar}
+          >
+            <Text
+              style={styles.confirmButtonText}
+            >
+              Confirmar
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={onClose}
+          >
+            <Text style={styles.cancelText}>
+              Cancelar
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -63,24 +208,70 @@ const styles = StyleSheet.create({
     fontSize: 21,
     fontWeight: 'bold',
     color: colors.primary,
-    marginBottom: 14,
+    textAlign: 'center',
   },
-  timeGrid: {
+  selectedTime: {
+    color: colors.secondary,
+    fontSize: 30,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 16,
+  },
+  rollupContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  timeButton: {
-    width: '31%',
-    backgroundColor: colors.secondary,
-    paddingVertical: 12,
-    borderRadius: 9,
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
   },
-  timeText: {
+  rollupColumn: {
+    width: '40%',
+  },
+  columnTitle: {
+    color: colors.primary,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  rollup: {
+    height: 220,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 9,
+  },
+  rollupItem: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rollupItemSelected: {
+    backgroundColor: colors.secondary,
+  },
+  rollupItemText: {
+    color: colors.primary,
+    fontSize: 17,
+  },
+  rollupItemTextSelected: {
     color: colors.surface,
     fontWeight: 'bold',
+  },
+  separator: {
+    color: colors.primary,
+    fontSize: 30,
+    fontWeight: 'bold',
+    marginHorizontal: 12,
+    marginTop: 28,
+  },
+  confirmButton: {
+    minHeight: 48,
+    backgroundColor: colors.secondary,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 18,
+  },
+  confirmButtonText: {
+    color: colors.surface,
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   cancelButton: {
     padding: 12,

@@ -17,7 +17,13 @@ import AppHeader from './components/AppHeader';
 import AppMenu from './components/AppMenu';
 import TimePickerModal from './components/TimePickerModal';
 
+import {
+  horarioParaMinutos,
+  intervaloHorarioValido,
+} from './utils/time';
+
 import LoginScreen from './screens/LoginScreen';
+import CadastroScreen from './screens/CadastroScreen';
 import HomeScreen from './screens/HomeScreen';
 import BuscarCaronasScreen from './screens/BuscarCaronasScreen';
 import PublicarCaronaScreen from './screens/PublicarCaronaScreen';
@@ -53,7 +59,16 @@ function AppContent() {
 
   const [origemBusca, setOrigemBusca] = useState('');
   const [destinoBusca, setDestinoBusca] = useState('ICEA');
-  const [horarioBusca, setHorarioBusca] = useState('');
+
+  const [
+    horarioInicioBusca,
+    setHorarioInicioBusca,
+  ] = useState('');
+
+  const [
+    horarioFimBusca,
+    setHorarioFimBusca,
+  ] = useState('');
 
   const [origemPublicar, setOrigemPublicar] = useState('');
   const [destinoPublicar, setDestinoPublicar] = useState('ICEA');
@@ -76,28 +91,63 @@ function AppContent() {
   const caronasFiltradas = useMemo(() => {
     const origem = normalizarTexto(origemBusca);
     const destino = normalizarTexto(destinoBusca);
-    const horario = horarioBusca.trim();
 
-    return caronasDisponiveis.filter((carona) => {
-      if (carona.ativa === false) {
-        return false;
+    const inicioEmMinutos =
+      horarioParaMinutos(horarioInicioBusca);
+
+    const fimEmMinutos =
+      horarioParaMinutos(horarioFimBusca);
+
+    return caronasDisponiveis.filter(
+      (carona) => {
+        if (carona.ativa === false) {
+          return false;
+        }
+
+        const correspondeOrigem =
+          !origem ||
+          normalizarTexto(carona.origem).includes(
+            origem
+          );
+
+        const correspondeDestino =
+          !destino ||
+          normalizarTexto(carona.destino).includes(
+            destino
+          );
+
+        const horarioCaronaEmMinutos =
+          horarioParaMinutos(carona.horario);
+
+        const correspondeHorarioInicio =
+          inicioEmMinutos === null ||
+          (
+            horarioCaronaEmMinutos !== null &&
+            horarioCaronaEmMinutos >=
+            inicioEmMinutos
+          );
+
+        const correspondeHorarioFim =
+          fimEmMinutos === null ||
+          (
+            horarioCaronaEmMinutos !== null &&
+            horarioCaronaEmMinutos <=
+            fimEmMinutos
+          );
+
+        return (
+          correspondeOrigem &&
+          correspondeDestino &&
+          correspondeHorarioInicio &&
+          correspondeHorarioFim
+        );
       }
-
-      const correspondeOrigem =
-        !origem || normalizarTexto(carona.origem).includes(origem);
-
-      const correspondeDestino =
-        !destino || normalizarTexto(carona.destino).includes(destino);
-
-      const correspondeHorario =
-        !horario || String(carona.horario) === horario;
-
-      return correspondeOrigem && correspondeDestino && correspondeHorario;
-    });
+    );
   }, [
     caronasDisponiveis,
     destinoBusca,
-    horarioBusca,
+    horarioFimBusca,
+    horarioInicioBusca,
     origemBusca,
   ]);
 
@@ -130,10 +180,28 @@ function AppContent() {
   }
 
   function handleBuscarCarona() {
-    if (!rotaContemIcea(origemBusca, destinoBusca)) {
+    if (
+      !rotaContemIcea(
+        origemBusca,
+        destinoBusca
+      )
+    ) {
       Alert.alert(
         'Rota inválida',
         'A origem ou o destino deve ser exatamente ICEA.'
+      );
+      return;
+    }
+
+    if (
+      !intervaloHorarioValido(
+        horarioInicioBusca,
+        horarioFimBusca
+      )
+    ) {
+      Alert.alert(
+        'Intervalo inválido',
+        'O horário inicial não pode ser maior que o horário final.'
       );
       return;
     }
@@ -251,7 +319,8 @@ function AppContent() {
   function limparFiltros() {
     setOrigemBusca('');
     setDestinoBusca('ICEA');
-    setHorarioBusca('');
+    setHorarioInicioBusca('');
+    setHorarioFimBusca('');
   }
 
   function openTimePicker(target) {
@@ -260,8 +329,12 @@ function AppContent() {
   }
 
   function selectTime(time) {
-    if (timeTarget === 'busca') {
-      setHorarioBusca(time);
+    if (timeTarget === 'buscaInicio') {
+      setHorarioInicioBusca(time);
+    }
+
+    if (timeTarget === 'buscaFim') {
+      setHorarioFimBusca(time);
     }
 
     if (timeTarget === 'publicar') {
@@ -288,10 +361,22 @@ function AppContent() {
           <BuscarCaronasScreen
             origemBusca={origemBusca}
             destinoBusca={destinoBusca}
-            horarioBusca={horarioBusca}
+            horarioInicioBusca={horarioInicioBusca}
+            horarioFimBusca={horarioFimBusca}
             onOrigemChange={setOrigemBusca}
             onDestinoChange={setDestinoBusca}
-            onOpenTimePicker={() => openTimePicker('busca')}
+            onOpenTimePickerInicio={() =>
+              openTimePicker('buscaInicio')
+            }
+            onOpenTimePickerFim={() =>
+              openTimePicker('buscaFim')
+            }
+            onLimparHorarioInicio={() =>
+              setHorarioInicioBusca('')
+            }
+            onLimparHorarioFim={() =>
+              setHorarioFimBusca('')
+            }
             onLimparFiltros={limparFiltros}
             onFiltrar={handleBuscarCarona}
             caronasDisponiveis={caronasDisponiveis}
@@ -343,6 +428,18 @@ function AppContent() {
       <LoginScreen
         onLogin={handleLogin}
         onSeedCompleted={carregarCaronas}
+        onOpenCadastro={() =>
+          setScreen('cadastro')
+        }
+      />
+    );
+  }
+
+  if (screen === 'cadastro') {
+    return (
+      <CadastroScreen
+        onCadastroConcluido={handleLogin}
+        onVoltar={() => setScreen('login')}
       />
     );
   }
@@ -370,8 +467,24 @@ function AppContent() {
 
       <TimePickerModal
         visible={timeModalVisible}
+        title={
+          timeTarget === 'buscaInicio'
+            ? 'Selecionar horário inicial'
+            : timeTarget === 'buscaFim'
+              ? 'Selecionar horário final'
+              : 'Selecionar hora de partida'
+        }
+        selectedTime={
+          timeTarget === 'buscaInicio'
+            ? horarioInicioBusca
+            : timeTarget === 'buscaFim'
+              ? horarioFimBusca
+              : horarioPublicar
+        }
         onSelect={selectTime}
-        onClose={() => setTimeModalVisible(false)}
+        onClose={() =>
+          setTimeModalVisible(false)
+        }
       />
     </SafeAreaView>
   );

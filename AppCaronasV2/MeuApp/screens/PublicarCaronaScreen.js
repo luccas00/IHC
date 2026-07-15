@@ -49,15 +49,22 @@ export default function PublicarCaronaScreen({
         onChangeText={onDestinoChange}
       />
 
-      <Text style={commonStyles.inputLabel}>Horário</Text>
+      <Text style={commonStyles.inputLabel}>
+        Hora de partida
+      </Text>
 
-      <TouchableOpacity style={styles.timeInput} onPress={onOpenTimePicker}>
+      <TouchableOpacity
+        style={styles.timeInput}
+        onPress={onOpenTimePicker}
+      >
         <Text
           style={
-            horarioPublicar ? styles.timeInputText : styles.placeholderText
+            horarioPublicar
+              ? styles.timeInputText
+              : styles.placeholderText
           }
         >
-          {horarioPublicar || 'Selecionar horário'}
+          {horarioPublicar || 'Selecionar hora de partida'}
         </Text>
       </TouchableOpacity>
 

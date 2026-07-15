@@ -22,11 +22,6 @@ export default function SobreScreen() {
         Tecnologias: React Native, Expo e Firebase Cloud Firestore.
       </Text>
 
-      <Text style={styles.securityNotice}>
-        Observação acadêmica: as senhas estão armazenadas em texto simples
-        apenas para fins de protótipo. Essa abordagem não deve ser usada em
-        produção.
-      </Text>
     </View>
   );
 }

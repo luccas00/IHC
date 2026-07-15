@@ -9,57 +9,104 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { autenticarUsuario } from '../services/UserService';
+import {
+  SafeAreaView,
+} from 'react-native-safe-area-context';
+
+import {
+  autenticarUsuario,
+} from '../services/UserService';
+
 import { seedDatabase } from '../seed';
 import { colors } from '../styles/colors';
-import { commonStyles } from '../styles/commonStyles';
-import { emailTemDominioPermitido } from '../utils/validators';
 
-export default function LoginScreen({ onLogin, onSeedCompleted }) {
+import {
+  commonStyles,
+} from '../styles/commonStyles';
+
+import {
+  emailTemDominioPermitido,
+} from '../utils/validators';
+
+export default function LoginScreen({
+  onLogin,
+  onSeedCompleted,
+  onOpenCadastro,
+}) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [loginEmAndamento, setLoginEmAndamento] = useState(false);
-  const [seedEmAndamento, setSeedEmAndamento] = useState(false);
+
+  const [
+    loginEmAndamento,
+    setLoginEmAndamento,
+  ] = useState(false);
+
+  const [
+    seedEmAndamento,
+    setSeedEmAndamento,
+  ] = useState(false);
 
   async function handleLogin() {
-    const emailNormalizado = email.trim().toLowerCase();
+    const emailNormalizado = email
+      .trim()
+      .toLowerCase();
 
-    if (!emailTemDominioPermitido(emailNormalizado)) {
+    if (
+      !emailTemDominioPermitido(
+        emailNormalizado
+      )
+    ) {
       Alert.alert(
         'E-mail inválido',
         'Use um e-mail institucional @aluno.ufop.edu.br ou @ufop.edu.br.'
       );
+
       return;
     }
 
     if (!senha) {
-      Alert.alert('Senha obrigatória', 'Informe a senha para continuar.');
+      Alert.alert(
+        'Senha obrigatória',
+        'Informe a senha para continuar.'
+      );
+
       return;
     }
 
     try {
       setLoginEmAndamento(true);
 
-      const usuario = await autenticarUsuario(emailNormalizado, senha);
+      const usuario =
+        await autenticarUsuario(
+          emailNormalizado,
+          senha
+        );
 
       if (!usuario) {
         Alert.alert(
           'Acesso negado',
           'E-mail ou senha inválidos. Execute o seed caso o banco ainda esteja vazio.'
         );
+
         return;
       }
 
       if (usuario.ativo === false) {
-        Alert.alert('Usuário inativo', 'Este usuário está desativado.');
+        Alert.alert(
+          'Usuário inativo',
+          'Este usuário está desativado.'
+        );
+
         return;
       }
 
       onLogin(usuario);
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error(
+        'Erro no login:',
+        error
+      );
 
       Alert.alert(
         'Erro no login',
@@ -74,7 +121,8 @@ export default function LoginScreen({ onLogin, onSeedCompleted }) {
     try {
       setSeedEmAndamento(true);
 
-      const resultado = await seedDatabase();
+      const resultado =
+        await seedDatabase();
 
       if (onSeedCompleted) {
         await onSeedCompleted();
@@ -85,7 +133,10 @@ export default function LoginScreen({ onLogin, onSeedCompleted }) {
         `${resultado.users} usuários e ${resultado.caronas} caronas foram cadastrados/atualizados.`
       );
     } catch (error) {
-      console.error('Erro ao executar seed:', error);
+      console.error(
+        'Erro ao executar seed:',
+        error
+      );
 
       Alert.alert(
         'Erro no seed',
@@ -97,12 +148,20 @@ export default function LoginScreen({ onLogin, onSeedCompleted }) {
   }
 
   return (
-    <SafeAreaView style={commonStyles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+    <SafeAreaView
+      style={commonStyles.safeArea}
+      edges={['top', 'bottom']}
+    >
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={colors.primary}
+      />
 
       <View style={styles.loginContainer}>
         <View style={styles.loginCard}>
-          <Text style={styles.loginTitle}>Caronas ICEA</Text>
+          <Text style={styles.loginTitle}>
+            Caronas ICEA
+          </Text>
 
           <Text style={styles.loginSubtitle}>
             Acesse com seu usuário acadêmico
@@ -129,42 +188,93 @@ export default function LoginScreen({ onLogin, onSeedCompleted }) {
           <TouchableOpacity
             style={[
               commonStyles.primaryButton,
-              loginEmAndamento && commonStyles.disabledButton,
+              loginEmAndamento &&
+                commonStyles.disabledButton,
             ]}
-            disabled={loginEmAndamento}
+            disabled={
+              loginEmAndamento ||
+              seedEmAndamento
+            }
             onPress={handleLogin}
           >
             {loginEmAndamento ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator
+                color="#ffffff"
+              />
             ) : (
-              <Text style={commonStyles.buttonText}>Entrar</Text>
+              <Text
+                style={commonStyles.buttonText}
+              >
+                Entrar
+              </Text>
             )}
           </TouchableOpacity>
 
+          <View style={styles.registerArea}>
+            <Text style={styles.registerText}>
+              Ainda não possui uma conta?
+            </Text>
+
+            <TouchableOpacity
+              style={
+                commonStyles.secondaryButton
+              }
+              disabled={
+                loginEmAndamento ||
+                seedEmAndamento
+              }
+              onPress={onOpenCadastro}
+            >
+              <Text
+                style={
+                  commonStyles.secondaryButtonText
+                }
+              >
+                Criar conta
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <Text style={commonStyles.helperText}>
-            Domínios aceitos: @aluno.ufop.edu.br ou @ufop.edu.br
+            Domínios aceitos:
+            {' '}
+            @aluno.ufop.edu.br ou @ufop.edu.br
           </Text>
 
           <View style={styles.seedArea}>
-            <Text style={styles.seedTitle}>Ambiente acadêmico</Text>
+            <Text style={styles.seedTitle}>
+              Ambiente acadêmico
+            </Text>
 
             <Text style={styles.seedText}>
-              Use o botão abaixo somente para cadastrar os dados iniciais no
+              Use o botão abaixo somente para
+              cadastrar os dados iniciais no
               Firestore.
             </Text>
 
             <TouchableOpacity
               style={[
                 commonStyles.secondaryButton,
-                seedEmAndamento && commonStyles.disabledButton,
+                seedEmAndamento &&
+                  commonStyles.disabledButton,
               ]}
-              disabled={seedEmAndamento}
+              disabled={
+                seedEmAndamento ||
+                loginEmAndamento
+              }
               onPress={handleSeed}
             >
               {seedEmAndamento ? (
-                <ActivityIndicator color={colors.secondaryDark} />
+                <ActivityIndicator
+                  color={colors.secondaryDark}
+                />
               ) : (
-                <Text style={commonStyles.secondaryButtonText}>
+                <Text
+                  style={
+                    commonStyles
+                      .secondaryButtonText
+                  }
+                >
                   Popular banco de teste
                 </Text>
               )}
@@ -207,6 +317,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 26,
     marginTop: 8,
+  },
+  registerArea: {
+    marginTop: 12,
+  },
+  registerText: {
+    color: colors.textMuted,
+    textAlign: 'center',
+    fontSize: 13,
   },
   seedArea: {
     borderTopWidth: 1,
